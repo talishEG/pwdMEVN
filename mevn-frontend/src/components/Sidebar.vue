@@ -1,71 +1,165 @@
 <template>
-  <transition name="slide">
-    <aside
-        v-show="isOpen"
-        class="fixed md:static w-64 z-40 md:z-auto h-full bg-white shadow-lg md:shadow-none"
-    >
-      <div class="p-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-bold mb-6 text-gray-700">PWMD</h2>
-          <button class="md:hidden mb-6" @click="$emit('toggle-sidebar')">
-            <svg
-                v-if="!isOpen"
-                class="w-6 h-6 text-gray-700"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-            >
-              <!-- Hamburger -->
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+  <aside
+      :class="[
+      'fixed md:relative md:translate-x-0 z-40 w-64 bg-[#2f3542] text-white h-screen transform transition-transform duration-300 ease-in-out',
+      props.sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+    ]"
+  >
+    <div class="mySideBar flex items-center justify-between px-4 py-4 border-b border-gray-600">
+      <img
+          class="w-10 h-10"
+          src="https://e-pwd-staging.pitb.gov.pk/assets/img/head-logo.png"
+          alt="PWMD Logo"
+      />
+      <span class="text-lg font-bold ml-2">PWMD</span>
+      <button class="md:hidden text-white" @click="toggleSidebar">
+        <svg v-if="!props.sidebarOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
 
-            <svg
-                v-else
-                class="w-6 h-6 text-gray-700"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-            >
-              <!-- Cross -->
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <nav class="space-y-2">
-          <RouterLink
-              v-for="link in links"
-              :key="link.name"
-              :to="link.href"
-              class="flex items-center gap-3 px-4 py-2 rounded hover:bg-gray-200 text-gray-700"
+    <nav class="overflow-y-auto transparent-scrollbar h-[calc(100%-80px)]">
+      <div v-for="link in sidebarLinks" :key="link.label">
+        <!-- Parent with children -->
+        <div v-if="link.children">
+          <div
+              class="flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors"
+              @click="toggleDropdown(link.label)"
           >
-            <component :is="link.icon" class="w-5 h-5" />
-            {{ link.name }}
-          </RouterLink>
-        </nav>
+            <component :is="Icons[link.icon]" class="w-5 h-5" />
+            <span class="transition-colors text-[#929aac] hover:text-white">
+              {{ link.label }}
+            </span>
+          </div>
+          <div v-if="dropdowns[link.label]" class="ml-8">
+            <RouterLink
+                v-for="child in link.children"
+                :key="child.meta.label"
+                :to="child.path"
+                class="block px-3 py-2 text-sm rounded transition-colors"
+                :class="[
+                $route.path === child.path ? 'bg-gray-600 text-white' : 'text-[#929aac] hover:text-white'
+              ]"
+            >
+              {{ child.meta.label }}
+            </RouterLink>
+          </div>
+        </div>
+
+        <RouterLink
+            v-else
+            :to="link.href"
+            class="flex items-center gap-3 px-5 py-3 transition-colors"
+            :class="{ 'text-white': $route.path === link.href, 'hover:text-white': true }"
+        >
+          <component :is="Icons[link.icon]" class="w-5 h-5" />
+          <span
+              :class="[
+              'transition-colors',
+              $route.path === link.href ? 'text-white' : 'text-[#929aac]',
+              'hover:text-white'
+            ]"
+          >
+            {{ link.label }}
+          </span>
+        </RouterLink>
       </div>
-    </aside>
-  </transition>
+    </nav>
+  </aside>
+
+  <div
+      v-if="props.sidebarOpen"
+      class="fixed inset-0 z-30 bg-opacity-30 md:hidden"
+      @click="toggleSidebar"
+  ></div>
 </template>
 
-<script setup>
-import { RouterLink } from 'vue-router'
-import { Home, FileText, Users } from 'lucide-vue-next'
-defineProps({ isOpen: Boolean })
 
-const links = [
-  { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Posts', href: '/posts', icon: FileText },
-  { name: 'Users', href: '/users', icon: Users },
-]
+<script setup>
+import { useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import * as Icons from 'lucide-vue-next'
+
+const props = defineProps({
+  sidebarOpen: Boolean,
+  toggleSidebar: Function,
+})
+
+const dropdowns = ref({})
+
+const toggleDropdown = (key) => {
+  dropdowns.value[key] = !dropdowns.value[key]
+}
+
+const routes = useRouter().options.routes
+
+const sidebarLinks = computed(() => {
+  const parents = {}
+  const children = {}
+
+  for (const route of routes) {
+    if (route.meta?.showInSidebar) {
+      if (route.meta.parent) {
+        if (!children[route.meta.parent]) children[route.meta.parent] = []
+        children[route.meta.parent].push(route)
+      } else {
+        parents[route.meta.label] = {
+          label: route.meta.label,
+          href: route.path,
+          icon: route.meta.icon,
+          children: children[route.meta.label] || null
+        }
+      }
+    }
+  }
+
+  for (const parentLabel in children) {
+    if (!parents[parentLabel]) {
+      parents[parentLabel] = {
+        label: parentLabel,
+        href: null,
+        icon: 'Folder',
+        children: children[parentLabel]
+      }
+    }
+  }
+
+  return Object.values(parents)
+})
 </script>
 
+
 <style scoped>
-.slide-enter-active, .slide-leave-active {
-  transition: transform 0.3s ease;
+.transparent-scrollbar::-webkit-scrollbar {
+  width: 8px;
 }
-.slide-enter-from, .slide-leave-to {
-  transform: translateX(-100%);
+
+.transparent-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.transparent-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #0b0b0b;
+  border-radius: 8px;
+}
+
+.transparent-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #0b0b0b transparent;
+}
+
+.mySideBar {
+  background-color: #272b35;
+  border-bottom: 1px solid #232730;
+  clear: both;
+  z-index: 10;
+  position: relative;
+  user-select: none;
 }
 </style>
