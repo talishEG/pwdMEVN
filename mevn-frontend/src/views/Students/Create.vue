@@ -44,9 +44,9 @@
 import { ref, onMounted } from "vue";
 import api from "@/services/studentApi";
 import { Toast } from "@/utils/toast";
-import Swal from "sweetalert2";
+import { useRouter } from 'vue-router'
 import DashboardLayout from '@/Layout/DashboardLayout.vue'
-
+const router = useRouter()
 const student = ref({
   name: "",
   email: "",
@@ -58,7 +58,8 @@ const student = ref({
 const submitForm = async () => {
   await api.createStudent({ ...student.value });
   student.value = { name: "", email: "", age: null, course: "" };
-  Toast.fire({
+  await router.push({ name: 'StudentsAll' })
+  await Toast.fire({
     icon: "success",
     title: "Student registered successfully",
   });

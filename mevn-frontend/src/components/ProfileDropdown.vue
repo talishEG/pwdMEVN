@@ -3,7 +3,7 @@
   <div class="relative">
     <button
         @click.prevent="toggleUserMenu"
-        class="flex text-sm border-transparent rounded-full focus:outline-none"
+        class="cursor-pointer flex text-sm border-transparent rounded-full focus:outline-none"
     >
       <img
           alt="Super Admin"
@@ -12,10 +12,8 @@
       />
     </button>
 
-    <!-- Overlay to close user menu -->
     <div class="fixed inset-0 z-40" v-if="userMenuOpen" @click="toggleUserMenu" />
 
-    <!-- User Menu Dropdown -->
     <div v-if="userMenuOpen" class="absolute z-50 mt-4 right-0 w-48 bg-white rounded-md shadow-lg">
       <div>
         <div class="px-4 py-3 text-xs text-gray-400 border-b border-gray-100">Super Admin</div>

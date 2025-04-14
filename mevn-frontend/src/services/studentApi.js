@@ -5,7 +5,9 @@ const API = axios.create({
 });
 
 export default {
-    getStudents: () => API.get("/"),
+    getStudents(page = 1, limit = 10) {
+        return API.get(`?page=${page}&limit=${limit}`);
+    },
     getStudent: (id) => API.get(`/${id}`),
     createStudent: (data) => API.post("/", data),
     updateStudent: (id, data) => API.put(`/${id}`, data),

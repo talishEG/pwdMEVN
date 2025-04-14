@@ -15,8 +15,23 @@ router.post("/", async (req, res) => {
 
 // Get all students
 router.get("/", async (req, res) => {
-    const students = await Student.find();
-    res.json(students);
+    const page = parseInt(req.query.page) || 1; // default page 1
+    const limit = parseInt(req.query.limit) || 10; // default 10 records per page
+
+    const skip = (page - 1) * limit;
+
+    const [students, total] = await Promise.all([
+        Student.find().skip(skip).limit(limit),
+        Student.countDocuments()
+    ]);
+    console.log(students);
+
+    res.json({
+        data: students,
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+    });
 });
 
 // Get a single student

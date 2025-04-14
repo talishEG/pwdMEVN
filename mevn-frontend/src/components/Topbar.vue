@@ -1,6 +1,6 @@
 <!-- src/components/Topbar.vue -->
 <template>
-  <header class="bg-white dark:bg-dark-clr flex justify-between items-center px-4 py-4 shadow md:shadow-none">
+  <header class="bg-[#272b35] dark:bg-dark-clr flex justify-between items-center px-4 py-4 shadow md:shadow-none">
     <div class="flex items-center">
       <button class="md:hidden mr-2" @click="toggleSidebar">
         <svg v-if="!props.sidebarOpen" class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">

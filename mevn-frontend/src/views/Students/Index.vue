@@ -31,6 +31,31 @@
           </tr>
           </tbody>
         </table>
+        <div class="mt-4 flex justify-center items-center space-x-2">
+          <button
+              @click="changePage(currentPage - 1)"
+              :disabled="currentPage === 1"
+              :class="[
+                'px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50',
+                currentPage !== 1 ? 'cursor-pointer' : 'cursor-not-allowed'
+              ]"
+          >
+            Prev
+          </button>
+
+          <span>Page {{ currentPage }} of {{ lastPage }}</span>
+
+          <button
+              @click="changePage(currentPage + 1)"
+              :disabled="currentPage === lastPage"
+              :class="[
+                'px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50',
+                currentPage !== lastPage ? 'cursor-pointer' : 'cursor-not-allowed'
+              ]"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   </DashboardLayout>
@@ -43,11 +68,22 @@ import { Toast } from "@/utils/toast";
 import Swal from "sweetalert2";
 import DashboardLayout from '@/Layout/DashboardLayout.vue'
 
-const students = ref([]);
 
-const fetchStudents = async () => {
-  const res = await api.getStudents();
-  students.value = res.data;
+const students = ref([]);
+const currentPage = ref(1);
+const lastPage = ref(1);
+const fetchStudents = async (page = 1) => {
+  const res = await api.getStudents(page, 10);
+  console.log(res);
+  students.value = res.data.data;
+  currentPage.value = res.data.page;
+  lastPage.value = res.data.lastPage;
+};
+
+const changePage = (page) => {
+  if (page >= 1 && page <= lastPage.value) {
+    fetchStudents(page);
+  }
 };
 
 const deleteStudent = async (id) => {

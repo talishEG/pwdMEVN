@@ -5,7 +5,7 @@
       props.sidebarOpen ? 'translate-x-0' : '-translate-x-full'
     ]"
   >
-    <div class="mySideBar flex items-center justify-between px-4 py-4 border-b border-gray-600">
+    <div class="mySideBar flex items-center justify-between px-4 py-3 border-b border-gray-600">
       <img
           class="w-10 h-10"
           src="https://e-pwd-staging.pitb.gov.pk/assets/img/head-logo.png"
@@ -29,33 +29,42 @@
         <!-- Parent with children -->
         <div v-if="link.children">
           <div
-              class="flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors"
+              class="flex items-center justify-between px-8 py-4 cursor-pointer transition-colors hover:bg-gray-700"
               @click="toggleDropdown(link.label)"
           >
-            <component :is="Icons[link.icon]" class="w-5 h-5" />
-            <span class="transition-colors text-[#929aac] hover:text-white">
-              {{ link.label }}
-            </span>
+            <div class="flex items-center gap-3">
+              <component :is="Icons[link.icon]" class="w-5 h-5" />
+              <span :class="['transition-colors', isOpen(link.label) ? 'text-white' : 'text-[#929aac] hover:text-white']">
+                {{ link.label }}
+              </span>
+            </div>
+            <span class="text-sm">{{ isOpen(link.label) ? '▾' : '▸' }}</span>
           </div>
-          <div v-if="dropdowns[link.label]" class="ml-8">
-            <RouterLink
-                v-for="child in link.children"
-                :key="child.meta.label"
-                :to="child.path"
-                class="block px-3 py-2 text-sm rounded transition-colors"
-                :class="[
-                $route.path === child.path ? 'bg-gray-600 text-white' : 'text-[#929aac] hover:text-white'
-              ]"
-            >
-              {{ child.meta.label }}
-            </RouterLink>
-          </div>
+
+          <transition name="dropdown">
+            <div v-if="isOpen(link.label)" class="ml-8">
+              <RouterLink
+                  v-for="child in link.children"
+                  :key="child.meta.label"
+                  :to="child.path"
+                  class="block px-8 py-3 text-sm rounded transition-colors"
+                  :class="[
+                  $route.path === child.path
+                    ? 'text-white'
+                    : 'text-[#929aac] hover:text-white'
+                ]"
+              >
+                {{ child.meta.label }}
+              </RouterLink>
+            </div>
+          </transition>
         </div>
 
+        <!-- Direct parent link -->
         <RouterLink
             v-else
             :to="link.href"
-            class="flex items-center gap-3 px-5 py-3 transition-colors"
+            class="flex items-center gap-3 px-8 py-4 transition-colors"
             :class="{ 'text-white': $route.path === link.href, 'hover:text-white': true }"
         >
           <component :is="Icons[link.icon]" class="w-5 h-5" />
@@ -80,10 +89,9 @@
   ></div>
 </template>
 
-
 <script setup>
 import { useRouter } from 'vue-router'
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import * as Icons from 'lucide-vue-next'
 
 const props = defineProps({
@@ -91,13 +99,16 @@ const props = defineProps({
   toggleSidebar: Function,
 })
 
-const dropdowns = ref({})
+const router = useRouter()
+const openDropdown = ref(null)
 
-const toggleDropdown = (key) => {
-  dropdowns.value[key] = !dropdowns.value[key]
+const toggleDropdown = (label) => {
+  openDropdown.value = openDropdown.value === label ? null : label
 }
 
-const routes = useRouter().options.routes
+const isOpen = (label) => openDropdown.value === label
+
+const routes = router.options.routes
 
 const sidebarLinks = computed(() => {
   const parents = {}
@@ -132,23 +143,29 @@ const sidebarLinks = computed(() => {
 
   return Object.values(parents)
 })
-</script>
 
+// Auto-expand dropdown if child route is active
+onMounted(() => {
+  const currentPath = router.currentRoute.value.path
+  for (const link of sidebarLinks.value) {
+    if (link.children?.some(child => child.path === currentPath)) {
+      openDropdown.value = link.label
+    }
+  }
+})
+</script>
 
 <style scoped>
 .transparent-scrollbar::-webkit-scrollbar {
   width: 8px;
 }
-
 .transparent-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .transparent-scrollbar::-webkit-scrollbar-thumb {
   background-color: #0b0b0b;
   border-radius: 8px;
 }
-
 .transparent-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #0b0b0b transparent;
@@ -156,10 +173,11 @@ const sidebarLinks = computed(() => {
 
 .mySideBar {
   background-color: #272b35;
-  border-bottom: 1px solid #232730;
+  border-bottom: 0px;
   clear: both;
   z-index: 10;
   position: relative;
   user-select: none;
+  border-right: 1px solid #2f3542;
 }
 </style>
